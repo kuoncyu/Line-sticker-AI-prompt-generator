@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LINE 貼圖大師 Pro - 集合頁版</title>
+    <title>LINE 貼圖大師 Pro - 支援一鍵複製</title>
     <style>
-        :root { --primary: #00c300; --secondary: #1e90ff; --dark: #1a1a1a; --light: #f8f9fa; }
+        :root { --primary: #00c300; --secondary: #1e90ff; --dark: #1a1a1a; --light: #f8f9fa; --accent: #ff4757; }
         body { font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif; background-color: #eaeff2; margin: 0; padding: 15px; }
         .container { max-width: 1100px; margin: 0 auto; background: white; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); overflow: hidden; }
         
@@ -21,7 +21,6 @@
         h2 { margin-top: 0; color: var(--dark); display: flex; align-items: center; gap: 10px; }
         label { font-weight: 600; display: block; margin-bottom: 8px; color: #444; }
         input, select { padding: 12px; border: 2px solid #eee; border-radius: 8px; width: 100%; box-sizing: border-box; font-size: 15px; transition: 0.3s; }
-        input:focus { border-color: var(--secondary); outline: none; }
         
         .grid-config { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 15px; }
         
@@ -35,12 +34,17 @@
         .btn-main { background: var(--primary); color: white; width: 100%; padding: 18px; font-size: 1.2em; margin-top: 10px; }
         .btn-main:hover { background: #00a300; transform: translateY(-2px); }
         .btn-rand { background: #6c757d; color: white; padding: 5px 10px; font-size: 12px; }
-        .btn-all-rand { background: #f39c12; color: white; margin-bottom: 15px; }
-        .btn-del { background: #ff4757; color: white; padding: 5px 10px; }
+        .btn-all-rand { background: #f39c12; color: white; margin-bottom: 15px; padding: 10px 20px; }
+        .btn-del { background: var(--accent); color: white; padding: 5px 10px; }
         
+        /* Copy Button */
+        .btn-copy { background: var(--secondary); color: white; width: 100%; padding: 12px; margin-top: 15px; font-size: 1em; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-copy:active { transform: scale(0.98); }
+        .btn-copy.copied { background: #2ed573; }
+
         /* Output */
-        #outputArea { background: #f8f9fa; border: 2px dashed var(--secondary); border-radius: 12px; padding: 20px; margin-top: 25px; }
-        .copy-box { background: #fff; padding: 15px; border: 1px solid #eee; border-radius: 8px; font-family: monospace; position: relative; word-break: break-all; }
+        #outputArea { background: #f8f9fa; border: 2px dashed var(--secondary); border-radius: 12px; padding: 25px; margin-top: 25px; }
+        .copy-box { background: #fff; padding: 15px; border: 1px solid #eee; border-radius: 8px; font-family: 'Courier New', Courier, monospace; position: relative; word-break: break-all; color: #2c3e50; line-height: 1.5; font-size: 14px; }
         
         /* Splitter */
         #dropZone { border: 3px dashed #cbd5e0; border-radius: 15px; padding: 50px; text-align: center; color: #718096; cursor: pointer; background: #edf2f7; }
@@ -63,7 +67,7 @@
             <div class="grid-config">
                 <div>
                     <label>主角描述</label>
-                    <input type="text" id="subject" placeholder="例如：一隻圓滾滾的藍色魟魚" oninput="saveData()">
+                    <input type="text" id="subject" placeholder="例如：一隻戴著廚師帽的黃色魟魚" oninput="saveData()">
                 </div>
                 <div>
                     <label>繪畫風格</label>
@@ -78,17 +82,18 @@
 
         <div class="card">
             <h2>💬 貼圖文字管理</h2>
-            <button class="btn-all-rand" onclick="randomizeAllTexts()">🎲 全部隨機填充</button>
+            <button class="btn-all-rand" onclick="randomizeAllTexts()">🎲 全部隨機填充文字</button>
             <div id="textContainer" class="text-grid"></div>
             <button class="btn-main" style="background:#34495e; margin-top: 20px;" onclick="addManualText()">➕ 新增一組自定義文字</button>
         </div>
 
-        <button class="btn-main" onclick="generateSheetPrompt()">🔥 生成「集合頁」指令 (一次產出多組)</button>
+        <button class="btn-main" onclick="generateSheetPrompt()">🔥 生成「集合頁」網格指令</button>
 
         <div id="outputArea" style="display:none;">
-            <label>✅ 請複製下方指令至 Midjourney / DALL-E 3：</label>
+            <label>✅ 指令已生成：</label>
             <div class="copy-box" id="finalPrompt"></div>
-            <p style="font-size: 13px; color: #666; margin-top: 10px;">💡 提示：此指令會引導 AI 生成 4x4 或 3x3 的網格大圖，方便後續直接切割。</p>
+            <button id="copyBtn" class="btn-copy" onclick="copyToClipboard()">📋 點我複製指令</button>
+            <p style="font-size: 13px; color: #666; margin-top: 12px; text-align: center;">貼心提醒：複製後直接貼給 Midjourney 或 ChatGPT 即可一次產出多張貼圖！</p>
         </div>
     </div>
 
@@ -106,7 +111,6 @@
                     <select id="gridType" onchange="updateGridFromType()">
                         <option value="4x4">4 x 4 (16張)</option>
                         <option value="3x3">3 x 3 (9張)</option>
-                        <option value="4x2">4 x 2 (8張)</option>
                         <option value="custom">自定義行列</option>
                     </select>
                 </div>
@@ -124,7 +128,7 @@
                 <canvas id="previewCanvas"></canvas>
             </div>
             
-            <button id="dlBtn" class="btn-main" style="display:none; background: #e67e22;" onclick="downloadAll()">💾 一鍵導出所有圖片 (ZIP/批次)</button>
+            <button id="dlBtn" class="btn-main" style="display:none; background: #e67e22;" onclick="downloadAll()">💾 一鍵導出所有圖片</button>
         </div>
     </div>
 </div>
@@ -132,11 +136,13 @@
 <script>
     // --- 資料庫 ---
     const styleOptions = [
-        "Kawaii 2D Anime", "3D Disney Pixar Style", "Flat Vector Illustration", "Hand-drawn Crayon",
-        "Pencil Sketch", "Minimalist Line Art", "Felt Wool / Needle Felt", "8-bit Pixel Art",
-        "Claymation (黏土風)", "Watercolor Illustration", "Ukiyo-e Style", "Cyberpunk Sticker",
-        "Pop Art", "Children's Book Illustration", "Oil Painting Texture", "Vintage 1930s Cartoon",
-        "Stitch Embroidery", "Paper Cut-out Art", "Chalkboard Art", "Glass Texture", "Zentangle Patterns"
+        "Kawaii 2D Anime (日系動漫)", "3D Disney Pixar (3D 迪士尼)", "Flat Vector (扁平向量)", 
+        "Crayon Drawing (蠟筆風)", "Pencil Sketch (素描)", "Felt Wool (羊毛氈)", 
+        "Pixel Art (像素風)", "Claymation (黏土人)", "Watercolor (水彩繪本)", 
+        "Cyberpunk Sticker (賽博朋克)", "Ukiyo-e (浮世繪)", "Pop Art (普普風)", 
+        "Vintage 1930s (復古卡通)", "Embroidery (刺繡)", "Paper Cut (剪紙風)", 
+        "Chalkboard (黑板畫)", "Glass Texture (玻璃質感)", "Oil Painting (油畫)",
+        "Gothic Cute (哥德風)", "Marker Doodle (麥克筆)", "Minimalist Line (極簡線條)"
     ];
 
     const phraseBank = [
@@ -149,7 +155,6 @@
     window.onload = function() {
         const sSelect = document.getElementById('styleSelect');
         styleOptions.forEach(s => sSelect.add(new Option(s, s)));
-        
         loadSavedData();
     };
 
@@ -201,16 +206,40 @@
     }
 
     function generateSheetPrompt() {
-        const subject = document.getElementById('subject').value || "a cute character";
+        const subject = document.getElementById('subject').value || "a cute manta ray";
         const style = document.getElementById('styleSelect').value;
         const texts = Array.from(document.querySelectorAll('.sticker-text')).map(i => i.value).filter(v => v !== "");
         
-        // 核心邏輯：生成 Sticker Sheet 指令
         const prompt = `**Sticker sheet set of multiple stickers**, ${style}, **${subject}**, featuring various poses and expressions including: (${texts.join(', ')}), white background, die-cut, vibrant colors, flat design, high resolution, organized in a clean grid --v 6.0 --tile`;
         
         document.getElementById('outputArea').style.display = 'block';
         document.getElementById('finalPrompt').innerText = prompt;
+        
+        // 重置複製按鈕狀態
+        const copyBtn = document.getElementById('copyBtn');
+        copyBtn.innerText = "📋 點我複製指令";
+        copyBtn.classList.remove('copied');
+        
         saveData();
+    }
+
+    // --- 一鍵複製功能 ---
+    function copyToClipboard() {
+        const promptText = document.getElementById('finalPrompt').innerText;
+        const btn = document.getElementById('copyBtn');
+
+        navigator.clipboard.writeText(promptText).then(() => {
+            btn.innerText = "✅ 已複製到剪貼簿！";
+            btn.classList.add('copied');
+            
+            // 3秒後恢復原狀
+            setTimeout(() => {
+                btn.innerText = "📋 點我複製指令";
+                btn.classList.remove('copied');
+            }, 3000);
+        }).catch(err => {
+            alert('複製失敗，請手動選取文字複製。');
+        });
     }
 
     // --- 自動儲存 ---
@@ -221,11 +250,11 @@
             count: document.getElementById('stickerCount').value,
             texts: Array.from(document.querySelectorAll('.sticker-text')).map(i => i.value)
         };
-        localStorage.setItem('sticker_master_data', JSON.stringify(data));
+        localStorage.setItem('sticker_master_v4_data', JSON.stringify(data));
     }
 
     function loadSavedData() {
-        const saved = JSON.parse(localStorage.getItem('sticker_master_data'));
+        const saved = JSON.parse(localStorage.getItem('sticker_master_v4_data'));
         if (saved) {
             document.getElementById('subject').value = saved.subject || "";
             document.getElementById('styleSelect').value = saved.style || styleOptions[0];
@@ -307,7 +336,7 @@
                 link.download = `sticker_${count.toString().padStart(2, '0')}.png`;
                 link.href = tempCanvas.toDataURL("image/png");
                 link.click();
-                await new Promise(res => setTimeout(res, 300)); // 避免瀏覽器封鎖
+                await new Promise(res => setTimeout(res, 300));
                 count++;
             }
         }
