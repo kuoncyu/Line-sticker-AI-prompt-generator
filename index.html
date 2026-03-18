@@ -1,197 +1,240 @@
-
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LINE 貼圖全能工廠 Pro</title>
+    <title>LINE 貼圖大師 Pro - 集合頁版</title>
     <style>
-        :root { --primary: #27ae60; --secondary: #3498db; --dark: #2c3e50; --bg: #f0f2f5; }
-        body { font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif; background-color: var(--bg); margin: 0; padding: 20px; color: #333; }
-        .container { max-width: 1000px; margin: 0 auto; background: white; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); overflow: hidden; }
+        :root { --primary: #00c300; --secondary: #1e90ff; --dark: #1a1a1a; --light: #f8f9fa; }
+        body { font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif; background-color: #eaeff2; margin: 0; padding: 15px; }
+        .container { max-width: 1100px; margin: 0 auto; background: white; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); overflow: hidden; }
         
-        /* 分頁樣式 */
+        /* Tabs */
         .tabs { display: flex; background: var(--dark); }
-        .tab { flex: 1; padding: 15px; text-align: center; color: white; cursor: pointer; transition: 0.3s; font-weight: bold; }
-        .tab.active { background: var(--primary); }
+        .tab { flex: 1; padding: 18px; text-align: center; color: #aaa; cursor: pointer; transition: 0.3s; font-weight: bold; font-size: 1.1em; }
+        .tab.active { background: #333; color: var(--primary); border-bottom: 4px solid var(--primary); }
         .tab-content { display: none; padding: 30px; }
         .tab-content.active { display: block; }
 
-        /* 通用元件 */
-        h2 { border-left: 5px solid var(--primary); padding-left: 10px; margin-bottom: 20px; }
-        .section { margin-bottom: 25px; padding: 15px; border: 1px solid #eee; border-radius: 8px; }
-        label { font-weight: bold; display: block; margin-bottom: 8px; }
-        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; font-size: 16px; margin-bottom: 10px; }
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        button { cursor: pointer; border: none; border-radius: 5px; transition: 0.3s; padding: 10px 20px; font-weight: bold; }
+        /* UI Elements */
+        .card { background: #fff; border: 1px solid #ddd; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+        h2 { margin-top: 0; color: var(--dark); display: flex; align-items: center; gap: 10px; }
+        label { font-weight: 600; display: block; margin-bottom: 8px; color: #444; }
+        input, select { padding: 12px; border: 2px solid #eee; border-radius: 8px; width: 100%; box-sizing: border-box; font-size: 15px; transition: 0.3s; }
+        input:focus { border-color: var(--secondary); outline: none; }
         
-        /* 生圖分頁專用 */
-        .btn-add { background: var(--primary); color: white; }
-        .btn-gen { background: var(--secondary); color: white; width: 100%; font-size: 18px; padding: 15px; }
-        .text-item { display: flex; gap: 10px; margin-bottom: 8px; }
-        .btn-del { background: #e74c3c; color: white; }
-        .prompt-card { background: #f8f9fa; border-left: 4px solid var(--secondary); padding: 15px; margin-bottom: 10px; position: relative; }
+        .grid-config { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 15px; }
         
-        /* 切割分頁專用 */
-        #dropZone { border: 2px dashed #ccc; padding: 40px; text-align: center; color: #7f8c8d; border-radius: 10px; margin-bottom: 20px; cursor: pointer; transition: 0.3s; }
-        #dropZone:hover { border-color: var(--secondary); background: #f0f8ff; }
-        #previewCanvas { max-width: 100%; height: auto; border: 1px solid #ccc; display: none; margin-top: 10px; }
-        .split-controls { background: #f9f9f9; padding: 15px; border-radius: 8px; display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; }
-        .split-controls div { flex: 1; min-width: 120px; }
-        .btn-download { background: #e67e22; color: white; width: 100%; margin-top: 20px; font-size: 18px; }
-        #resultThumbnails { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 5px; margin-top: 15px; }
-        .thumb-box { width: 100%; padding-bottom: 100%; position: relative; border: 1px solid #eee; }
-        .thumb-box img { position: absolute; width: 100%; height: 100%; object-fit: cover; }
+        /* Sticker Text Manager */
+        .text-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; margin-top: 15px; }
+        .text-box { display: flex; gap: 5px; background: #f1f3f5; padding: 8px; border-radius: 8px; align-items: center; }
+        .text-box input { padding: 5px 8px; font-size: 14px; border: 1px solid #ccc; }
+        
+        /* Buttons */
+        button { cursor: pointer; border: none; border-radius: 8px; font-weight: bold; transition: 0.2s; }
+        .btn-main { background: var(--primary); color: white; width: 100%; padding: 18px; font-size: 1.2em; margin-top: 10px; }
+        .btn-main:hover { background: #00a300; transform: translateY(-2px); }
+        .btn-rand { background: #6c757d; color: white; padding: 5px 10px; font-size: 12px; }
+        .btn-all-rand { background: #f39c12; color: white; margin-bottom: 15px; }
+        .btn-del { background: #ff4757; color: white; padding: 5px 10px; }
+        
+        /* Output */
+        #outputArea { background: #f8f9fa; border: 2px dashed var(--secondary); border-radius: 12px; padding: 20px; margin-top: 25px; }
+        .copy-box { background: #fff; padding: 15px; border: 1px solid #eee; border-radius: 8px; font-family: monospace; position: relative; word-break: break-all; }
+        
+        /* Splitter */
+        #dropZone { border: 3px dashed #cbd5e0; border-radius: 15px; padding: 50px; text-align: center; color: #718096; cursor: pointer; background: #edf2f7; }
+        #dropZone:hover { background: #e2e8f0; border-color: var(--secondary); }
+        #canvasContainer { margin-top: 20px; text-align: center; overflow: auto; }
+        canvas { border: 1px solid #000; max-width: 100%; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="tabs">
-        <div class="tab active" onclick="openTab('genTab', this)">✨ 生圖指令產生器</div>
-        <div class="tab" onclick="openTab('splitTab', this)">✂️ 圖片自動切割</div>
+        <div class="tab active" onclick="switchTab('genTab', this)">🚀 集合頁生圖指令</div>
+        <div class="tab" onclick="switchTab('splitTab', this)">✂️ 圖片切割輸出</div>
     </div>
 
     <div id="genTab" class="tab-content active">
-        <h2>貼圖靈感配置</h2>
-        <div class="section">
-            <label>角色描述 (AI 會根據此描述繪製主體)</label>
-            <input type="text" id="subject" placeholder="例如：一隻戴著墨鏡的粉紅魟魚">
-        </div>
-
-        <div class="grid-2">
-            <div>
-                <label>繪畫風格 (20+ 選項)</label>
-                <select id="styleSelect"></select>
+        <div class="card">
+            <h2>🎨 貼圖角色與風格設定</h2>
+            <div class="grid-config">
+                <div>
+                    <label>主角描述</label>
+                    <input type="text" id="subject" placeholder="例如：一隻圓滾滾的藍色魟魚" oninput="saveData()">
+                </div>
+                <div>
+                    <label>繪畫風格</label>
+                    <select id="styleSelect" onchange="saveData()"></select>
+                </div>
+                <div>
+                    <label>預計數量</label>
+                    <input type="number" id="stickerCount" value="16" min="8" max="16" oninput="refreshTextGrid(); saveData()">
+                </div>
             </div>
-            <div>
-                <label>生成數量 (8-16)</label>
-                <input type="number" id="stickerCount" min="8" max="16" value="8">
-            </div>
         </div>
 
-        <div class="section">
-            <label>貼圖文字管理 (自動儲存)</label>
-            <div id="textContainer"></div>
-            <button class="btn-add" onclick="addNewText()">＋ 新增文字組</button>
+        <div class="card">
+            <h2>💬 貼圖文字管理</h2>
+            <button class="btn-all-rand" onclick="randomizeAllTexts()">🎲 全部隨機填充</button>
+            <div id="textContainer" class="text-grid"></div>
+            <button class="btn-main" style="background:#34495e; margin-top: 20px;" onclick="addManualText()">➕ 新增一組自定義文字</button>
         </div>
 
-        <button class="btn-gen" onclick="generatePrompts()">🚀 批次生成 AI 指令</button>
+        <button class="btn-main" onclick="generateSheetPrompt()">🔥 生成「集合頁」指令 (一次產出多組)</button>
 
-        <div id="promptOutput" style="margin-top: 20px; display: none;">
-            <h3>指令清單 (複製到 Midjourney / DALL-E)</h3>
-            <div id="promptsList"></div>
+        <div id="outputArea" style="display:none;">
+            <label>✅ 請複製下方指令至 Midjourney / DALL-E 3：</label>
+            <div class="copy-box" id="finalPrompt"></div>
+            <p style="font-size: 13px; color: #666; margin-top: 10px;">💡 提示：此指令會引導 AI 生成 4x4 或 3x3 的網格大圖，方便後續直接切割。</p>
         </div>
     </div>
 
     <div id="splitTab" class="tab-content">
-        <h2>圖片切割器 (貼圖打包準備)</h2>
-        <div id="dropZone" onclick="document.getElementById('fileInput').click()">
-            <p>📁 點擊或拖放圖片至此 (支援 JPG / PNG)</p>
-            <input type="file" id="fileInput" hidden accept="image/*" onchange="handleImage(this)">
-        </div>
-
-        <div class="split-controls">
-            <div>
-                <label>快速設定</label>
-                <select onchange="quickSet(this.value)">
-                    <option value="custom">自定義</option>
-                    <option value="3x3">3 x 3 (9宮格)</option>
-                    <option value="4x4">4 x 4 (16份)</option>
-                    <option value="4x2">4 x 2 (8份)</option>
-                </select>
+        <div class="card">
+            <h2>✂️ 圖片自動切割器</h2>
+            <div id="dropZone" onclick="document.getElementById('fileInput').click()">
+                <p>📸 點擊或將 AI 生成的大圖拖放到這裡</p>
+                <input type="file" id="fileInput" hidden accept="image/*" onchange="handleImage(this)">
             </div>
-            <div>
-                <label>橫向切割 (行)</label>
-                <input type="number" id="rows" value="3" min="1">
+            
+            <div class="grid-config" style="margin-top: 20px;">
+                <div>
+                    <label>切割方式</label>
+                    <select id="gridType" onchange="updateGridFromType()">
+                        <option value="4x4">4 x 4 (16張)</option>
+                        <option value="3x3">3 x 3 (9張)</option>
+                        <option value="4x2">4 x 2 (8張)</option>
+                        <option value="custom">自定義行列</option>
+                    </select>
+                </div>
+                <div>
+                    <label>橫向(列)</label>
+                    <input type="number" id="rows" value="4" oninput="updatePreview()">
+                </div>
+                <div>
+                    <label>直向(行)</label>
+                    <input type="number" id="cols" value="4" oninput="updatePreview()">
+                </div>
             </div>
-            <div>
-                <label>直向切割 (列)</label>
-                <input type="number" id="cols" value="3" min="1">
+
+            <div id="canvasContainer">
+                <canvas id="previewCanvas"></canvas>
             </div>
-            <button class="btn-add" onclick="updatePreview()" style="height: 40px;">更新預覽</button>
+            
+            <button id="dlBtn" class="btn-main" style="display:none; background: #e67e22;" onclick="downloadAll()">💾 一鍵導出所有圖片 (ZIP/批次)</button>
         </div>
-
-        <div style="text-align: center; margin-top: 15px;">
-            <canvas id="previewCanvas"></canvas>
-            <div id="resultThumbnails"></div>
-        </div>
-
-        <button id="downloadBtn" class="btn-download" style="display:none;" onclick="downloadAll()">💾 一鍵輸出所有切片檔</button>
     </div>
 </div>
 
 <script>
-    // --- 共用與分頁邏輯 ---
-    function openTab(tabId, el) {
+    // --- 資料庫 ---
+    const styleOptions = [
+        "Kawaii 2D Anime", "3D Disney Pixar Style", "Flat Vector Illustration", "Hand-drawn Crayon",
+        "Pencil Sketch", "Minimalist Line Art", "Felt Wool / Needle Felt", "8-bit Pixel Art",
+        "Claymation (黏土風)", "Watercolor Illustration", "Ukiyo-e Style", "Cyberpunk Sticker",
+        "Pop Art", "Children's Book Illustration", "Oil Painting Texture", "Vintage 1930s Cartoon",
+        "Stitch Embroidery", "Paper Cut-out Art", "Chalkboard Art", "Glass Texture", "Zentangle Patterns"
+    ];
+
+    const phraseBank = [
+        "Hello!", "Good Morning", "Thank You", "Love You", "OK!", "Hahaha", "??", "Wait!",
+        "I'm Tired", "Great!", "No!", "On my way", "Hurry Up", "Miss You", "Cry", "Angry",
+        "Fighting!", "Good Night", "Surprise!", "Good Job", "Yum!", "Sorry", "Awesome", "OMG"
+    ];
+
+    // --- 初始化 ---
+    window.onload = function() {
+        const sSelect = document.getElementById('styleSelect');
+        styleOptions.forEach(s => sSelect.add(new Option(s, s)));
+        
+        loadSavedData();
+    };
+
+    function switchTab(id, el) {
         document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        document.getElementById(tabId).classList.add('active');
+        document.getElementById(id).classList.add('active');
         el.classList.add('active');
     }
 
     // --- 生圖邏輯 ---
-    const styles = [
-        "美式復古卡通 (Vintage Cartoon)", "日系療癒動漫 (Kawaii Anime)", "3D 黏土人 (Claymation Style)",
-        "3D 迪士尼風 (Disney Pixer Style)", "粉蠟筆手繪 (Crayon Doodle)", "細膩鉛筆素描 (Pencil Sketch)",
-        "透明系水彩 (Watercolor Painting)", "8-bit 像素藝術 (Pixel Art)", "賽博龐克 (Cyberpunk)",
-        "極簡線條畫 (Minimalist Line Art)", "羊毛氈質感 (Felted Wool Texture)", "刺繡風 (Embroidery Art)",
-        "粉彩夢幻風 (Pastel Dreamy)", "中式水墨 (Ink Wash)", "Ukiyo-e 浮世繪", "普普藝術 (Pop Art)",
-        "樂高積木風 (Lego Style)", "寫實微縮模型 (Miniature Food)", "油畫質感 (Oil Texture)",
-        "黑板粉筆畫 (Chalkboard)", "萬聖節哥德 (Gothic Cute)", "拼貼藝術 (Paper Collage)", "螢光霓虹 (Neon Art)"
-    ];
-
-    const defaultTexts = ["Hello!", "Thank You ❤️", "OK!", "Hahaha 😂", "Cry... 😭", "Good Night 🌙", "Angry! 💢", "Fighting! 🔥"];
-
-    window.onload = function() {
-        // 初始化風格
-        const s = document.getElementById('styleSelect');
-        styles.forEach(item => s.add(new Option(item, item)));
+    function refreshTextGrid() {
+        const count = parseInt(document.getElementById('stickerCount').value);
+        const container = document.getElementById('textContainer');
+        const currentInputs = Array.from(document.querySelectorAll('.sticker-text')).map(i => i.value);
         
-        // 讀取生圖設定
-        loadGenData();
-    };
-
-    function loadGenData() {
-        document.getElementById('subject').value = localStorage.getItem('s_subject') || "";
-        document.getElementById('styleSelect').value = localStorage.getItem('s_style') || styles[0];
-        document.getElementById('stickerCount').value = localStorage.getItem('s_count') || 8;
-        const savedTexts = JSON.parse(localStorage.getItem('s_texts')) || defaultTexts;
-        savedTexts.forEach(t => renderTextInput(t));
+        container.innerHTML = '';
+        for (let i = 0; i < count; i++) {
+            createTextInput(currentInputs[i] || "");
+        }
     }
 
-    function renderTextInput(val) {
+    function createTextInput(val) {
         const div = document.createElement('div');
-        div.className = 'text-item';
-        div.innerHTML = `<input type="text" class="sticker-text" value="${val}"><button class="btn-del" onclick="this.parentElement.remove()">刪除</button>`;
+        div.className = 'text-box';
+        div.innerHTML = `
+            <input type="text" class="sticker-text" value="${val}" placeholder="文字..." oninput="saveData()">
+            <button class="btn-rand" onclick="randOne(this)">🎲</button>
+            <button class="btn-del" onclick="this.parentElement.remove(); saveData()">✕</button>
+        `;
         document.getElementById('textContainer').appendChild(div);
     }
 
-    function addNewText() { renderTextInput(""); }
+    function addManualText() { createTextInput(""); saveData(); }
 
-    function generatePrompts() {
-        const subject = document.getElementById('subject').value || "A cute character";
+    function randOne(btn) {
+        const input = btn.previousElementSibling;
+        input.value = phraseBank[Math.floor(Math.random() * phraseBank.length)];
+        saveData();
+    }
+
+    function randomizeAllTexts() {
+        const inputs = document.querySelectorAll('.sticker-text');
+        let pool = [...phraseBank].sort(() => 0.5 - Math.random());
+        inputs.forEach((input, i) => {
+            input.value = pool[i % pool.length];
+        });
+        saveData();
+    }
+
+    function generateSheetPrompt() {
+        const subject = document.getElementById('subject').value || "a cute character";
         const style = document.getElementById('styleSelect').value;
-        const count = document.getElementById('stickerCount').value;
-        const texts = Array.from(document.querySelectorAll('.sticker-text')).map(i => i.value);
+        const texts = Array.from(document.querySelectorAll('.sticker-text')).map(i => i.value).filter(v => v !== "");
         
-        // 儲存
-        localStorage.setItem('s_subject', subject);
-        localStorage.setItem('s_style', style);
-        localStorage.setItem('s_count', count);
-        localStorage.setItem('s_texts', JSON.stringify(texts));
+        // 核心邏輯：生成 Sticker Sheet 指令
+        const prompt = `**Sticker sheet set of multiple stickers**, ${style}, **${subject}**, featuring various poses and expressions including: (${texts.join(', ')}), white background, die-cut, vibrant colors, flat design, high resolution, organized in a clean grid --v 6.0 --tile`;
+        
+        document.getElementById('outputArea').style.display = 'block';
+        document.getElementById('finalPrompt').innerText = prompt;
+        saveData();
+    }
 
-        const list = document.getElementById('promptsList');
-        list.innerHTML = '';
-        document.getElementById('promptOutput').style.display = 'block';
+    // --- 自動儲存 ---
+    function saveData() {
+        const data = {
+            subject: document.getElementById('subject').value,
+            style: document.getElementById('styleSelect').value,
+            count: document.getElementById('stickerCount').value,
+            texts: Array.from(document.querySelectorAll('.sticker-text')).map(i => i.value)
+        };
+        localStorage.setItem('sticker_master_data', JSON.stringify(data));
+    }
 
-        for (let i = 0; i < count; i++) {
-            const t = texts[i] || "Surprise";
-            const prompt = `[LINE Sticker], ${style}, ${subject}, expressive "${t}", white background, die-cut, 8k --v 6.0`;
-            const card = document.createElement('div');
-            card.className = 'prompt-card';
-            card.innerHTML = `<strong>貼圖 ${i+1}:</strong><br>${prompt}`;
-            list.appendChild(card);
+    function loadSavedData() {
+        const saved = JSON.parse(localStorage.getItem('sticker_master_data'));
+        if (saved) {
+            document.getElementById('subject').value = saved.subject || "";
+            document.getElementById('styleSelect').value = saved.style || styleOptions[0];
+            document.getElementById('stickerCount').value = saved.count || 16;
+            document.getElementById('textContainer').innerHTML = '';
+            saved.texts.forEach(t => createTextInput(t));
+        } else {
+            refreshTextGrid();
+            randomizeAllTexts();
         }
     }
 
@@ -203,11 +246,10 @@
     function handleImage(input) {
         if (input.files && input.files[0]) {
             const reader = new FileReader();
-            reader.onload = function(e) {
-                sourceImg.onload = function() {
-                    canvas.style.display = 'block';
+            reader.onload = (e) => {
+                sourceImg.onload = () => {
+                    document.getElementById('dlBtn').style.display = 'block';
                     updatePreview();
-                    document.getElementById('downloadBtn').style.display = 'block';
                 };
                 sourceImg.src = e.target.result;
             };
@@ -215,64 +257,60 @@
         }
     }
 
-    function quickSet(val) {
-        if (val === 'custom') return;
-        const parts = val.split('x');
-        document.getElementById('rows').value = parts[0];
-        document.getElementById('cols').value = parts[1];
+    function updateGridFromType() {
+        const type = document.getElementById('gridType').value;
+        if (type !== 'custom') {
+            const [r, c] = type.split('x');
+            document.getElementById('rows').value = r;
+            document.getElementById('cols').value = c;
+        }
         updatePreview();
     }
 
     function updatePreview() {
         if (!sourceImg.src) return;
-        const rows = parseInt(document.getElementById('rows').value);
-        const cols = parseInt(document.getElementById('cols').value);
+        const r = parseInt(document.getElementById('rows').value);
+        const c = parseInt(document.getElementById('cols').value);
         
         canvas.width = sourceImg.width;
         canvas.height = sourceImg.height;
         ctx.drawImage(sourceImg, 0, 0);
 
-        // 畫切割線
-        ctx.strokeStyle = "red";
-        ctx.lineWidth = 5;
-        const dw = canvas.width / cols;
-        const dh = canvas.height / rows;
+        ctx.strokeStyle = "rgba(255, 0, 0, 0.8)";
+        ctx.lineWidth = Math.max(2, sourceImg.width / 200);
+        const dw = canvas.width / c;
+        const dh = canvas.height / r;
 
-        for (let i = 1; i < cols; i++) {
+        for (let i = 1; i < c; i++) {
             ctx.beginPath(); ctx.moveTo(i * dw, 0); ctx.lineTo(i * dw, canvas.height); ctx.stroke();
         }
-        for (let j = 1; j < rows; j++) {
+        for (let j = 1; j < r; j++) {
             ctx.beginPath(); ctx.moveTo(0, j * dh); ctx.lineTo(canvas.width, j * dh); ctx.stroke();
         }
     }
 
     async function downloadAll() {
-        const rows = parseInt(document.getElementById('rows').value);
-        const cols = parseInt(document.getElementById('cols').value);
-        const dw = sourceImg.width / cols;
-        const dh = sourceImg.height / rows;
+        const r = parseInt(document.getElementById('rows').value);
+        const c = parseInt(document.getElementById('cols').value);
+        const dw = sourceImg.width / c;
+        const dh = sourceImg.height / r;
 
         let count = 1;
-        for (let r = 0; r < rows; r++) {
-            for (let c = 0; c < cols; c++) {
+        for (let i = 0; i < r; i++) {
+            for (let j = 0; j < c; j++) {
                 const tempCanvas = document.createElement('canvas');
                 tempCanvas.width = dw;
                 tempCanvas.height = dh;
-                const tempCtx = tempCanvas.getContext('2d');
-                
-                tempCtx.drawImage(sourceImg, c * dw, r * dh, dw, dh, 0, 0, dw, dh);
+                tempCanvas.getContext('2d').drawImage(sourceImg, j * dw, i * dh, dw, dh, 0, 0, dw, dh);
                 
                 const link = document.createElement('a');
                 link.download = `sticker_${count.toString().padStart(2, '0')}.png`;
                 link.href = tempCanvas.toDataURL("image/png");
                 link.click();
-                
-                // 稍微延遲避免瀏覽器阻擋大量下載
-                await new Promise(resolve => setTimeout(resolve, 200));
+                await new Promise(res => setTimeout(res, 300)); // 避免瀏覽器封鎖
                 count++;
             }
         }
-        alert(`已嘗試下載 ${count-1} 張圖片，請確認瀏覽器是否允許「多重檔案下載」。`);
     }
 </script>
 
