@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LINE 貼圖大師 Pro - 全語系網格版</title>
+    <title>LINE 貼圖大師 v7 - 自動去背無框版</title>
     <style>
         :root { --primary: #00c300; --secondary: #1e90ff; --dark: #1a1a1a; --accent: #ff4757; }
         body { font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif; background-color: #eaeff2; margin: 0; padding: 15px; }
@@ -24,7 +24,7 @@
         
         .text-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-top: 15px; }
         .text-box { display: flex; gap: 5px; background: #f1f3f5; padding: 8px; border-radius: 8px; align-items: center; }
-        .text-box input { padding: 5px 8px; font-size: 14px; border: 1px solid #ccc; background: white; }
+        .text-box input { padding: 5px 8px; font-size: 14px; border: 1px solid #ccc; background: white; flex: 1; }
         
         button { cursor: pointer; border: none; border-radius: 8px; font-weight: bold; transition: 0.2s; }
         .btn-main { background: var(--primary); color: white; width: 100%; padding: 18px; font-size: 1.1em; margin-top: 10px; }
@@ -39,26 +39,34 @@
         #outputArea { background: #f8f9fa; border: 2px dashed var(--secondary); border-radius: 12px; padding: 25px; margin-top: 25px; }
         .copy-box { background: #fff; padding: 15px; border: 1px solid #eee; border-radius: 8px; font-family: monospace; word-break: break-all; color: #333; line-height: 1.6; }
         
-        #dropZone { border: 3px dashed #cbd5e0; border-radius: 15px; padding: 50px; text-align: center; color: #718096; cursor: pointer; background: #edf2f7; }
-        #canvasContainer { margin-top: 20px; text-align: center; }
-        canvas { border: 1px solid #000; max-width: 100%; }
+        #dropZone { border: 3px dashed #cbd5e0; border-radius: 15px; padding: 50px; text-align: center; color: #718096; cursor: pointer; background: #edf2f7; transition: 0.3s;}
+        #dropZone.dragover { border-color: var(--primary); background: #e0f9e0; }
+        #canvasContainer { margin-top: 20px; text-align: center; position: relative; display: inline-block; max-width: 100%;}
+        canvas { border: 1px solid #000; max-width: 100%; height: auto; display: block; background-image: conic-gradient(#eee 25%, white 0 50%, #eee 0 75%, white 0); background-size: 20px 20px; /* 透明背景棋盤格 */ }
+        
+        .warning-box { background: #e0f7fa; color: #006064; padding: 15px; border-radius: 8px; margin-bottom: 15px; font-size: 14px; border-left: 5px solid #00bcd4; }
+        .control-group { display: flex; gap: 10px; margin-top: 15px; align-items: center; background: #f8f9fa; padding: 10px; border-radius: 8px;}
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="tabs">
-        <div class="tab active" onclick="switchTab('genTab', this)">🚀 集合頁指令生成</div>
-        <div class="tab" onclick="switchTab('splitTab', this)">✂️ 圖片切割輸出</div>
+        <div class="tab active" onclick="switchTab('genTab', this)">🚀 1. 生成無框指令</div>
+        <div class="tab" onclick="switchTab('splitTab', this)">✂️ 2. 自動去背切割</div>
     </div>
 
     <div id="genTab" class="tab-content active">
+        <div class="warning-box">
+            🛡️ <b>工廠模式 Pro 啟動：</b> 下方生成的指令已強制要求 AI **「不得畫出分隔線」**，且每個角色都會縮小置中在"隱形格子"內，確保切割不爆邊。
+        </div>
+
         <div class="card">
             <h2>🎨 貼圖設定</h2>
             <div class="grid-config">
                 <div style="grid-column: span 1;">
                     <label>主角描述</label>
-                    <input type="text" id="subject" placeholder="例如：一隻可愛的魟魚" oninput="saveData()">
+                    <input type="text" id="subject" placeholder="例如：一隻戴墨鏡的魟魚" oninput="saveData()">
                 </div>
                 <div>
                     <label>語系</label>
@@ -80,31 +88,35 @@
         </div>
 
         <div class="card">
-            <h2>💬 貼圖文字 (對應不同語系)</h2>
+            <h2>💬 貼圖文字與表情</h2>
             <button class="btn-all-rand" onclick="randomizeAllTexts()">🎲 依語言隨機填充</button>
             <div id="textContainer" class="text-grid"></div>
             <button class="btn-main" style="background:#34495e; margin-top: 20px;" onclick="addManualText()">➕ 新增自定義文字</button>
         </div>
 
-        <button class="btn-main" onclick="generateSheetPrompt()">🔥 生成「去背網格版」指令</button>
+        <button class="btn-main" onclick="generateSheetPrompt()">🔥 生成「隱形網格、白底」指令</button>
 
         <div id="outputArea" style="display:none;">
-            <label>✅ 已為您優化「無框、去背」指令：</label>
+            <label>✅ 指令已生成 (已鎖定無框、白底模式)：</label>
             <div class="copy-box" id="finalPrompt"></div>
-            <button id="copyBtn" class="btn-copy" onclick="copyToClipboard()">📋 點我複製指令</button>
+            <button id="copyBtn" class="btn-copy" onclick="copyToClipboard()">📋 一鍵複製指令，準備生圖</button>
         </div>
     </div>
 
     <div id="splitTab" class="tab-content">
         <div class="card">
-            <h2>✂️ 自動切割與導出</h2>
-            <div id="dropZone" onclick="document.getElementById('fileInput').click()">
-                <p>📸 點擊或拖放 AI 生成的大圖 (請確保背景是純色)</p>
-                <input type="file" id="fileInput" hidden accept="image/*" onchange="handleImage(this)">
+            <h2>✂️ 自動去背切割與批次導出</h2>
+            <div class="warning-box" style="background: #fff3cd; color: #856404; border-color: #ffeeba;">
+                💡 <b>完美去背技巧：</b> AI 生成大圖後，請按下方按鈕上傳。本工廠會**自動移除白色背景**並轉為透明 PNG。
+            </div>
+
+            <div id="dropZone">
+                <p>📸 點擊或拖放 AI 生成的「白底」大圖到這裡</p>
+                <input type="file" id="fileInput" hidden accept="image/*">
             </div>
             
-            <div class="grid-config" style="margin-top: 20px;">
-                <div style="grid-column: span 2;">
+            <div class="control-group">
+                <div style="flex: 2;">
                     <label>切割模式</label>
                     <select id="gridType" onchange="updateGridFromType()">
                         <option value="4x4">4 x 4 (16張)</option>
@@ -112,33 +124,39 @@
                         <option value="custom">自定義</option>
                     </select>
                 </div>
-                <div><label>列(Rows)</label><input type="number" id="rows" value="4" oninput="updatePreview()"></div>
-                <div><label>行(Cols)</label><input type="number" id="cols" value="4" oninput="updatePreview()"></div>
+                <div><label>列(Rows)</label><input type="number" id="rows" value="4" style="padding:8px;" oninput="updatePreview()"></div>
+                <div><label>行(Cols)</label><input type="number" id="cols" value="4" style="padding:8px;" oninput="updatePreview()"></div>
+                <button class="btn-main" style="background: var(--accent); margin-top:25px; padding: 10px;" onclick="processRemoveBackground()">✨ 一鍵自動去背</button>
             </div>
 
-            <div id="canvasContainer"><canvas id="previewCanvas"></canvas></div>
-            <button id="dlBtn" class="btn-main" style="display:none; background: #e67e22;" onclick="downloadAll()">💾 一鍵下載所有圖片</button>
+            <div id="canvasContainer">
+                <canvas id="previewCanvas"></canvas>
+            </div>
+            
+            <button id="dlBtn" class="btn-main" style="display:none; background: #e67e22;" onclick="downloadAll()">💾 下載所有透明 PNG 貼圖</button>
         </div>
     </div>
 </div>
 
 <script>
     const styleOptions = [
-        "Kawaii 2D Anime", "3D Disney Pixar", "Flat Vector Illustration", "Hand-drawn Crayon",
+        "Kawaii 2D Anime", "3D Disney Pixar Style", "Flat Vector Illustration", "Hand-drawn Crayon",
         "Pencil Sketch", "Minimalist Line Art", "Felt Wool Art", "8-bit Pixel Art", "Claymation Style",
-        "Watercolor", "Ukiyo-e Style", "Cyberpunk", "Pop Art", "Paper Cut-out", "Chalkboard Art", "Glass Texture", "Oil Painting", "Vintage Cartoon", "Embroidery Art", "Gothic Cute", "Marker Doodle"
+        "Watercolor", "Ukiyo-e Style", "Cyberpunk", "Pop Art", "Paper Cut-out", "Chalkboard Art", "Oil Painting", "Vintage Cartoon", "Embroidery Art", "Gothic Cute", "Marker Doodle"
     ];
 
     const phraseBanks = {
-        zh: ["你好!", "謝謝", "愛你", "OK!", "哈哈哈", "??", "等一下", "好累", "太棒了", "不要", "在路上", "快點", "想你", "哭哭", "生氣", "加油", "晚安", "驚喜", "做得好", "好吃", "對不起", "超讚", "天啊", "受夠了"],
-        en: ["Hello!", "Thanks", "Love ya", "OK!", "LOL", "??", "Wait", "Tired", "Great!", "No", "On my way", "Hurry", "Miss you", "Cry", "Angry", "Go!", "Good Night", "Wow!", "Good Job", "Yum", "Sorry", "Awesome", "OMG", "Enough"],
-        jp: ["こんにちは", "ありがとう", "愛してる", "了解!", "笑", "??", "待って", "疲れた", "すごい!", "いやだ", "向かってます", "早く", "会いたい", "泣き", "怒り", "頑張れ", "おやすみ", "びっくり", "よくやった", "おいしい", "ごめん", "最高", "まじで", "もう無理"]
+        zh: ["你好! 👋", "謝謝 ❤️", "愛你 😘", "OK! 👌", "哈哈哈 😂", "?? ❓", "等一下 ✋", "好累 😴", "太棒了 ✨", "不要 ❌", "在路上 🏃", "快點 ⚡", "想你 🥺", "哭哭 😭", "生氣 💢", "加油 🔥", "晚安 🌙", "驚喜 🎁", "做得好 👍", "好吃 😋", "對不起 🙏", "超讚 💯", "天啊 😱", "受夠了 😤"],
+        en: ["Hello! 👋", "Thanks ❤️", "Love ya 😘", "OK! 👌", "LOL 😂", "?? ❓", "Wait ✋", "Tired 😴", "Great! ✨", "No ❌", "On my way 🏃", "Hurry ⚡", "Miss you 🥺", "Cry 😭", "Angry 💢", "Go! 🔥", "Good Night 🌙", "Wow! 🎁", "Good Job 👍", "Yum 😋", "Sorry 🙏", "Awesome 💯", "OMG 😱", "Enough 😤"],
+        jp: ["こんにちは 👋", "ありがとう ❤️", "愛してる 😘", "了解! 👌", "笑 😂", "?? ❓", "待って ✋", "疲れた 😴", "すごい! ✨", "いやだ ❌", "向かってます 🏃", "早く ⚡", "会いたい 🥺", "泣き 😭", "怒り 💢", "頑張れ 🔥", "おやすみ 🌙", "びっくり 🎁", "よくやった 👍", "おいしい 😋", "ごめん 🙏", "最高 💯", "まじで 😱", "もう無理 😤"]
     };
 
+    // --- 初始化與儲存邏輯 ---
     window.onload = function() {
         const sSelect = document.getElementById('styleSelect');
         styleOptions.forEach(s => sSelect.add(new Option(s, s)));
         loadSavedData();
+        setupDragAndDrop();
     };
 
     function switchTab(id, el) {
@@ -148,6 +166,7 @@
         el.classList.add('active');
     }
 
+    // --- 生圖邏輯 (分頁一) ---
     function refreshTextGrid() {
         const count = parseInt(document.getElementById('stickerCount').value);
         const container = document.getElementById('textContainer');
@@ -159,7 +178,7 @@
     function createTextInput(val) {
         const div = document.createElement('div');
         div.className = 'text-box';
-        div.innerHTML = `<input type="text" class="sticker-text" value="${val}" placeholder="文字..." oninput="saveData()"><button class="btn-rand" onclick="randOne(this)">🎲</button><button class="btn-del" onclick="this.parentElement.remove(); saveData()">✕</button>`;
+        div.innerHTML = `<input type="text" class="sticker-text" value="${val}" placeholder="文字與表情..." oninput="saveData()"><button class="btn-rand" onclick="randOne(this)">🎲</button><button class="btn-del" onclick="this.parentElement.remove(); saveData()">✕</button>`;
         document.getElementById('textContainer').appendChild(div);
     }
 
@@ -185,23 +204,20 @@
         const style = document.getElementById('styleSelect').value;
         const texts = Array.from(document.querySelectorAll('.sticker-text')).map(i => i.value).filter(v => v !== "");
         
-        // 強化去背與無框指令
-        const prompt = `**Sticker sheet** of multiple separate stickers, **${style} style**, **${subject}**, featuring various poses and expressions: (${texts.join(', ')}). **No borders, no outlines, no frames between stickers**. **Isolated on a plain solid white background**, flat design, clean edges, no shadows, high resolution, organized in a clean 4x4 grid --v 6.0 --tile`;
+        // 核心進化指令 v7：強制 NO Lines, NO frames, 白底
+        const prompt = `**Sticker sheet set**, arranged in a precise **4x4 structured formation**, **${style} style**, **${subject}**, featuring various expressions and poses: (${texts.join(', ')}). **Floating arrangement, NO visible grid lines, NO dividing frames, NO borders between stickers**. Each item scaled down to fit center of its invisible cell with wide spacing. **Solid pure white background**, die-cut style, high resolution --v 6.0 --style raw --ar 1:1`;
         
         document.getElementById('outputArea').style.display = 'block';
         document.getElementById('finalPrompt').innerText = prompt;
-        const copyBtn = document.getElementById('copyBtn');
-        copyBtn.innerText = "📋 點我複製指令";
-        copyBtn.classList.remove('copied');
         saveData();
     }
 
     function copyToClipboard() {
         navigator.clipboard.writeText(document.getElementById('finalPrompt').innerText).then(() => {
             const btn = document.getElementById('copyBtn');
-            btn.innerText = "✅ 已複製！請貼到 AI 生圖軟體";
+            btn.innerText = "✅ 已複製！貼給 AI 即可產出無框白底圖";
             btn.classList.add('copied');
-            setTimeout(() => { btn.innerText = "📋 點我複製指令"; btn.classList.remove('copied'); }, 3000);
+            setTimeout(() => { btn.innerText = "📋 一鍵複製指令，準備生圖"; btn.classList.remove('copied'); }, 3000);
         });
     }
 
@@ -213,11 +229,11 @@
             lang: document.getElementById('langSelect').value,
             texts: Array.from(document.querySelectorAll('.sticker-text')).map(i => i.value)
         };
-        localStorage.setItem('sticker_master_v5_data', JSON.stringify(data));
+        localStorage.setItem('sticker_master_v7_data', JSON.stringify(data));
     }
 
     function loadSavedData() {
-        const saved = JSON.parse(localStorage.getItem('sticker_master_v5_data'));
+        const saved = JSON.parse(localStorage.getItem('sticker_master_v7_data'));
         if (saved) {
             document.getElementById('subject').value = saved.subject || "";
             document.getElementById('styleSelect').value = saved.style || styleOptions[0];
@@ -225,29 +241,83 @@
             document.getElementById('langSelect').value = saved.lang || "zh";
             document.getElementById('textContainer').innerHTML = '';
             saved.texts.forEach(t => createTextInput(t));
-        } else {
-            refreshTextGrid();
-            randomizeAllTexts();
-        }
+        } else { refreshTextGrid(); randomizeAllTexts(); }
     }
 
-    // --- 切割邏輯 ---
+    // --- 切割與自動去背邏輯 (分頁二) ---
     let sourceImg = new Image();
-    const canvas = document.getElementById('previewCanvas');
-    const ctx = canvas.getContext('2d');
+    let originalCanvas = document.createElement('canvas'); // 儲存原始圖
+    let originalCtx = originalCanvas.getContext('2d');
+    const previewCanvas = document.getElementById('previewCanvas');
+    const previewCtx = previewCanvas.getContext('2d');
+    let isBgRemoved = false; // 標記是否已去背
 
-    function handleImage(input) {
-        if (input.files && input.files[0]) {
+    function setupDragAndDrop() {
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+
+        dropZone.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+        dropZone.addEventListener('drop', (e) => { e.preventDefault(); dropZone.classList.remove('dragover'); handleFiles(e.dataTransfer.files); });
+    }
+
+    function handleFiles(files) {
+        if (files && files[0]) {
             const reader = new FileReader();
             reader.onload = (e) => {
                 sourceImg.onload = () => {
+                    // 初始化原始 Canvas
+                    originalCanvas.width = sourceImg.width;
+                    originalCanvas.height = sourceImg.height;
+                    originalCtx.drawImage(sourceImg, 0, 0);
+                    isBgRemoved = false; // 重置去背狀態
                     document.getElementById('dlBtn').style.display = 'block';
                     updatePreview();
                 };
                 sourceImg.src = e.target.result;
             };
-            reader.readAsDataURL(input.files[0]);
+            reader.readAsDataURL(files[0]);
         }
+    }
+
+    // ✨ 關鍵功能：前端 Canvas 自動白色去背 ✨
+    function processRemoveBackground() {
+        if (!sourceImg.src) return alert("請先上傳圖片！");
+        if (isBgRemoved) return alert("已經去背過囉！");
+
+        const width = originalCanvas.width;
+        const height = originalCanvas.height;
+        const imageData = originalCtx.getImageData(0, 0, width, height);
+        const data = imageData.data; // [r, g, b, a, r, g, b, a, ...]
+
+        // 白色像素去背邏輯 (容差設定)
+        const tolerance = 15; // 容許灰度值在 240-255 之間都視為白色
+        const targetR = 255;
+        const targetG = 255;
+        const targetB = 255;
+
+        for (let i = 0; i < data.length; i += 4) {
+            const r = data[i];
+            const g = data[i+1];
+            const b = data[i+2];
+            
+            // 檢查是否接近白色
+            if (Math.abs(r - targetR) <= tolerance && 
+                Math.abs(g - targetG) <= tolerance && 
+                Math.abs(b - targetB) <= tolerance) {
+                // 將透明度 Alpha 設為 0 (完全透明)
+                data[i+3] = 0;
+            }
+        }
+
+        // 將處理後的像素數據放回原始 Canvas
+        originalCtx.putImageData(imageData, 0, 0);
+        isBgRemoved = true;
+        updatePreview(); // 更新顯示預覽（會顯示棋盤格）
+        alert("自動去背完成！");
     }
 
     function updateGridFromType() {
@@ -264,33 +334,53 @@
         if (!sourceImg.src) return;
         const r = parseInt(document.getElementById('rows').value);
         const c = parseInt(document.getElementById('cols').value);
-        canvas.width = sourceImg.width;
-        canvas.height = sourceImg.height;
-        ctx.drawImage(sourceImg, 0, 0);
-        ctx.strokeStyle = "rgba(255, 0, 0, 0.6)";
-        ctx.lineWidth = 3;
-        const dw = canvas.width / c;
-        const dh = canvas.height / r;
-        for (let i = 1; i < c; i++) { ctx.beginPath(); ctx.moveTo(i * dw, 0); ctx.lineTo(i * dw, canvas.height); ctx.stroke(); }
-        for (let j = 1; j < r; j++) { ctx.beginPath(); ctx.moveTo(0, j * dh); ctx.lineTo(canvas.width, j * dh); ctx.stroke(); }
-    }
+        
+        // 預覽畫布等於去背後的原始畫布
+        previewCanvas.width = originalCanvas.width;
+        previewCanvas.height = originalCanvas.height;
+        previewCtx.drawImage(originalCanvas, 0, 0);
 
+        // 畫紅色切割線 (僅用於預覽參考)
+        previewCtx.strokeStyle = "rgba(255, 0, 0, 0.7)";
+        previewCtx.lineWidth = Math.max(2, previewCanvas.width / 300);
+        const dw = previewCanvas.width / c;
+        const dh = previewCanvas.height / r;
+
+        for (let i = 1; i < c; i++) { ctxBegin(previewCtx, i*dw, 0, i*dw, previewCanvas.height); }
+        for (let j = 1; j < r; j++) { ctxBegin(previewCtx, 0, j*dh, previewCanvas.width, j*dh); }
+    }
+    function ctxBegin(c, x1,y1,x2,y2){c.beginPath();c.moveTo(x1,y1);c.lineTo(x2,y2);c.stroke();}
+
+    // 💾 導出邏輯：從已去背的原始 Canvas 切割並下載透明 PNG
     async function downloadAll() {
         const r = parseInt(document.getElementById('rows').value);
         const c = parseInt(document.getElementById('cols').value);
-        const dw = sourceImg.width / c;
-        const dh = sourceImg.height / r;
+        const dw = originalCanvas.width / c;
+        const dh = originalCanvas.height / r;
+
         let count = 1;
+        const total = r * c;
+
+        if(!confirm(`準備導出 ${total} 張透明 PNG 貼圖。瀏覽器可能會彈出多個下載視窗，請點擊「允許」。`)) return;
+
         for (let i = 0; i < r; i++) {
             for (let j = 0; j < c; j++) {
+                // 建立一個透明的小畫布
                 const tempCanvas = document.createElement('canvas');
                 tempCanvas.width = dw; tempCanvas.height = dh;
-                tempCanvas.getContext('2d').drawImage(sourceImg, j * dw, i * dh, dw, dh, 0, 0, dw, dh);
+                const tempCtx = tempCanvas.getContext('2d');
+                
+                // 從已去背的 originalCanvas 複製對應區域
+                tempCtx.drawImage(originalCanvas, j * dw, i * dh, dw, dh, 0, 0, dw, dh);
+                
+                // 下載為透明 PNG
                 const link = document.createElement('a');
-                link.download = `sticker_${count.toString().padStart(2, '0')}.png`;
-                link.href = tempCanvas.toDataURL("image/png");
+                link.download = `sticker_transparent_${count.toString().padStart(2, '0')}.png`;
+                link.href = tempCanvas.toDataURL("image/png"); // 預設就是透明的
                 link.click();
-                await new Promise(res => setTimeout(res, 300));
+                
+                // 稍微延遲避免瀏覽器封鎖批次下載
+                await new Promise(res => setTimeout(res, 350));
                 count++;
             }
         }
