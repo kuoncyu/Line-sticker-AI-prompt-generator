@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LINE 貼圖大師 v7 - 自動去背無框版</title>
+    <title>LINE 貼圖大師 v7.1 - 全域裁切去背版</title>
     <style>
         :root { --primary: #00c300; --secondary: #1e90ff; --dark: #1a1a1a; --accent: #ff4757; }
         body { font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif; background-color: #eaeff2; margin: 0; padding: 15px; }
@@ -114,18 +114,41 @@
                 <p>📸 點擊或拖放 AI 生成的「白底」大圖到這裡</p>
                 <input type="file" id="fileInput" hidden accept="image/*">
             </div>
+
+            <div class="control-group" style="flex-wrap: wrap; background: #fffde7; border: 1px solid #fff9c4;">
+                <div style="width: 100%; font-weight: bold; color: #5d4037; font-size: 14px;">📏 第一步：調整大圖全域邊框裁切 (Pixels)</div>
+                <div style="flex: 1; min-width: 120px;">
+                    <label style="font-size: 13px;">上邊緣裁切</label>
+                    <input type="number" id="cropTop" value="0" min="0" style="padding:8px;" oninput="updatePreview()">
+                </div>
+                <div style="flex: 1; min-width: 120px;">
+                    <label style="font-size: 13px;">下邊緣裁切</label>
+                    <input type="number" id="cropBottom" value="0" min="0" style="padding:8px;" oninput="updatePreview()">
+                </div>
+                <div style="flex: 1; min-width: 120px;">
+                    <label style="font-size: 13px;">左邊緣裁切</label>
+                    <input type="number" id="cropLeft" value="0" min="0" style="padding:8px;" oninput="updatePreview()">
+                </div>
+                <div style="flex: 1; min-width: 120px;">
+                    <label style="font-size: 13px;">右邊緣裁切</label>
+                    <input type="number" id="cropRight" value="0" min="0" style="padding:8px;" oninput="updatePreview()">
+                </div>
+            </div>
             
             <div class="control-group">
+                <div style="width: 100%; font-weight: bold; color: #333; font-size: 14px;">✂️ 第二步：等距分割與去背</div>
+            </div>
+            <div class="control-group" style="margin-top: 0;">
                 <div style="flex: 2;">
-                    <label>切割模式</label>
-                    <select id="gridType" onchange="updateGridFromType()">
+                    <label style="font-size: 13px;">切割模式</label>
+                    <select id="gridType" onchange="updateGridFromType()" style="padding:8px;">
                         <option value="4x4">4 x 4 (16張)</option>
                         <option value="3x3">3 x 3 (9張)</option>
                         <option value="custom">自定義</option>
                     </select>
                 </div>
-                <div><label>列(Rows)</label><input type="number" id="rows" value="4" style="padding:8px;" oninput="updatePreview()"></div>
-                <div><label>行(Cols)</label><input type="number" id="cols" value="4" style="padding:8px;" oninput="updatePreview()"></div>
+                <div><label style="font-size: 13px;">列(Rows)</label><input type="number" id="rows" value="4" style="padding:8px;" oninput="updatePreview()"></div>
+                <div><label style="font-size: 13px;">行(Cols)</label><input type="number" id="cols" value="4" style="padding:8px;" oninput="updatePreview()"></div>
                 <button class="btn-main" style="background: var(--accent); margin-top:25px; padding: 10px;" onclick="processRemoveBackground()">✨ 一鍵自動去背</button>
             </div>
 
@@ -274,6 +297,13 @@
                     originalCanvas.height = sourceImg.height;
                     originalCtx.drawImage(sourceImg, 0, 0);
                     isBgRemoved = false; // 重置去背狀態
+                    
+                    // 新圖片上傳時，重置裁切數值
+                    document.getElementById('cropTop').value = 0;
+                    document.getElementById('cropBottom').value = 0;
+                    document.getElementById('cropLeft').value = 0;
+                    document.getElementById('cropRight').value = 0;
+
                     document.getElementById('dlBtn').style.display = 'block';
                     updatePreview();
                 };
@@ -335,33 +365,81 @@
         const r = parseInt(document.getElementById('rows').value);
         const c = parseInt(document.getElementById('cols').value);
         
+        // 取得全域邊框裁切數值
+        const cropT = parseInt(document.getElementById('cropTop').value) || 0;
+        const cropB = parseInt(document.getElementById('cropBottom').value) || 0;
+        const cropL = parseInt(document.getElementById('cropLeft').value) || 0;
+        const cropR = parseInt(document.getElementById('cropRight').value) || 0;
+
         // 預覽畫布等於去背後的原始畫布
         previewCanvas.width = originalCanvas.width;
         previewCanvas.height = originalCanvas.height;
         previewCtx.drawImage(originalCanvas, 0, 0);
 
-        // 畫紅色切割線 (僅用於預覽參考)
+        // 繪製半透明黑色遮罩，表示被裁切掉的區域
+        previewCtx.fillStyle = "rgba(0, 0, 0, 0.5)";
+        previewCtx.fillRect(0, 0, previewCanvas.width, cropT); // 上
+        previewCtx.fillRect(0, previewCanvas.height - cropB, previewCanvas.width, cropB); // 下
+        previewCtx.fillRect(0, cropT, cropL, previewCanvas.height - cropT - cropB); // 左
+        previewCtx.fillRect(previewCanvas.width - cropR, cropT, cropR, previewCanvas.height - cropT - cropB); // 右
+
+        // 計算實際有效作業區域的座標與尺寸
+        const effectX = cropL;
+        const effectY = cropT;
+        const effectW = previewCanvas.width - cropL - cropR;
+        const effectH = previewCanvas.height - cropT - cropB;
+
+        if (effectW <= 0 || effectH <= 0) return; // 避免設定錯誤導致寬高為負數
+
+        // 畫紅色切割線 (僅在「有效區域內」進行等距分割)
         previewCtx.strokeStyle = "rgba(255, 0, 0, 0.7)";
         previewCtx.lineWidth = Math.max(2, previewCanvas.width / 300);
-        const dw = previewCanvas.width / c;
-        const dh = previewCanvas.height / r;
+        const dw = effectW / c;
+        const dh = effectH / r;
 
-        for (let i = 1; i < c; i++) { ctxBegin(previewCtx, i*dw, 0, i*dw, previewCanvas.height); }
-        for (let j = 1; j < r; j++) { ctxBegin(previewCtx, 0, j*dh, previewCanvas.width, j*dh); }
+        // 畫內部格線
+        for (let i = 1; i < c; i++) { ctxBegin(previewCtx, effectX + i*dw, effectY, effectX + i*dw, effectY + effectH); }
+        for (let j = 1; j < r; j++) { ctxBegin(previewCtx, effectX, effectY + j*dh, effectX + effectW, effectY + j*dh); }
+        
+        // 畫出有效區域的最外框，讓人明確知道切割邊界
+        previewCtx.strokeRect(effectX, effectY, effectW, effectH);
     }
-    function ctxBegin(c, x1,y1,x2,y2){c.beginPath();c.moveTo(x1,y1);c.lineTo(x2,y2);c.stroke();}
+    
+    function ctxBegin(ctx, x1, y1, x2, y2){
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+    }
 
-    // 💾 導出邏輯：從已去背的原始 Canvas 切割並下載透明 PNG
+    // 💾 導出邏輯：從已裁切的有效區域進行等距分割，並下載透明 PNG
     async function downloadAll() {
         const r = parseInt(document.getElementById('rows').value);
         const c = parseInt(document.getElementById('cols').value);
-        const dw = originalCanvas.width / c;
-        const dh = originalCanvas.height / r;
+        
+        // 取得全域裁切數值
+        const cropT = parseInt(document.getElementById('cropTop').value) || 0;
+        const cropB = parseInt(document.getElementById('cropBottom').value) || 0;
+        const cropL = parseInt(document.getElementById('cropLeft').value) || 0;
+        const cropR = parseInt(document.getElementById('cropRight').value) || 0;
+
+        const effectX = cropL;
+        const effectY = cropT;
+        const effectW = originalCanvas.width - cropL - cropR;
+        const effectH = originalCanvas.height - cropT - cropB;
+
+        if (effectW <= 0 || effectH <= 0) {
+            alert("裁切邊框設定錯誤！有效區域不能小於等於 0。");
+            return;
+        }
+
+        const dw = effectW / c;
+        const dh = effectH / r;
 
         let count = 1;
         const total = r * c;
 
-        if(!confirm(`準備導出 ${total} 張透明 PNG 貼圖。瀏覽器可能會彈出多個下載視窗，請點擊「允許」。`)) return;
+        if(!confirm(`準備導出 ${total} 張透明 PNG 貼圖。將依據您設定的裁切範圍進行分割。瀏覽器可能會彈出多個下載視窗，請點擊「允許」。`)) return;
 
         for (let i = 0; i < r; i++) {
             for (let j = 0; j < c; j++) {
@@ -370,8 +448,12 @@
                 tempCanvas.width = dw; tempCanvas.height = dh;
                 const tempCtx = tempCanvas.getContext('2d');
                 
-                // 從已去背的 originalCanvas 複製對應區域
-                tempCtx.drawImage(originalCanvas, j * dw, i * dh, dw, dh, 0, 0, dw, dh);
+                // 從已去背的 originalCanvas 的「有效區域座標」擷取對應區塊
+                tempCtx.drawImage(
+                    originalCanvas, 
+                    effectX + j * dw, effectY + i * dh, dw, dh, // 來源起點與長寬 (加上了裁切偏移量)
+                    0, 0, dw, dh                                // 目的地起點與長寬
+                );
                 
                 // 下載為透明 PNG
                 const link = document.createElement('a');
